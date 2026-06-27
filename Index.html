@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KAES – Extrator de Contrato</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #1e2533;
+  }
+
+  .badge {
+    background: #3b82f6;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 99px;
+    letter-spacing: 0.5px;
+  }
+
+  h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  /* Paste area */
+  .paste-box {
+    background: #13182a;
+    border: 1px dashed #2d3a55;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .paste-label {
+    display: block;
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 120px;
+    background: #0f1117;
+    border: 1px solid #1e2533;
+    border-radius: 7px;
+    padding: 10px;
+    font-size: 13px;
+    color: #cbd5e1;
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+  }
+
+  textarea:focus { border-color: #3b82f6; }
+  textarea::placeholder { color: #334155; }
+
+  .btn-extract {
+    width: 100%;
+    margin-top: 10px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-extract:hover { background: #2563eb; }
+  .btn-extract:active { background: #1d4ed8; }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 16px;
+    color: #334155;
+    font-size: 11px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: #1e2533;
+  }
+
+  /* Fields */
+  .fields { display: flex; flex-direction: column; gap: 10px; }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .field-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .field-copy {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .field-copy.filled { border-color: #16a34a; }
+  .field-copy.empty  { border-color: #2d3650; background: #1a1f2e; }
+
+  .field-value {
+    flex: 1;
+    padding: 9px 10px;
+    font-size: 13px;
+    color: #1e293b;
+    background: transparent;
+    border: none;
+    outline: none;
+    min-width: 0;
+  }
+
+  .field-copy.empty .field-value {
+    color: #475569;
+    font-style: italic;
+  }
+
+  .btn-copy {
+    background: #e2e8f0;
+    border: none;
+    border-left: 1px solid #cbd5e1;
+    padding: 9px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #475569;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-copy:hover  { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  .btn-copy:active { background: #2563eb; }
+  .btn-copy.copied { background: #16a34a; color: #fff; border-color: #16a34a; }
+
+  .field-copy.empty .btn-copy {
+    background: #1e2533;
+    border-color: #2d3650;
+    color: #475569;
+    cursor: default;
+  }
+
+  /* Status */
+  #status {
+    margin-top: 14px;
+    font-size: 12px;
+    text-align: center;
+    min-height: 18px;
+    color: #22c55e;
+  }
+  #status.error { color: #f87171; }
+
+  /* Clear btn */
+  .btn-clear {
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #1e2533;
+    border-radius: 8px;
+    padding: 9px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-clear:hover { color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge">KAES</span>
+  <h1>Extrator de Contrato</h1>
+</header>
+
+<div class="paste-box">
+  <span class="paste-label">📋 Cole o texto do contrato</span>
+  <textarea id="txt" placeholder="SR. FULANO DE TAL, brasileiro, CPF nº 000.000.000-00, e-mail fulano@email.com, tel. 71 9.9999-9999..."></textarea>
+  <button class="btn-extract" onclick="extrair()">🔍 Extrair dados</button>
+</div>
+
+<div class="divider">dados extraídos</div>
+
+<div class="fields">
+  <div class="field">
+    <span class="field-label">Nome Empresarial (PJ)</span>
+    <div class="field-copy empty" id="wrap-nome-pj">
+      <input class="field-value" id="nome-pj" readonly placeholder="—" />
+      <button class="btn-copy" onclick="copiar('nome-pj', this)">Copiar</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <span class="field-label">Nome (Pessoa Física)</span>
+    <div class="field-copy empty" id="wrap-nome-pf">
+      <input class="field-value" id="nome-pf" readonly placeholder="—" />
+      <button class="btn-copy" onclick="copiar('nome-pf', this)">Copiar</button>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <span class="field-label">CNPJ</span>
+      <div class="field-copy empty" id="wrap-cnpj">
+        <input class="field-value" id="cnpj" readonly placeholder="—" />
+        <button class="btn-copy" onclick="copiar('cnpj', this)">Copiar</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">CPF</span>
+      <div class="field-copy empty" id="wrap-cpf">
+        <input class="field-value" id="cpf" readonly placeholder="—" />
+        <button class="btn-copy" onclick="copiar('cpf', this)">Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <span class="field-label">Telefone</span>
+      <div class="field-copy empty" id="wrap-tel">
+        <input class="field-value" id="tel" readonly placeholder="—" />
+        <button class="btn-copy" onclick="copiar('tel', this)">Copiar</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">E-mail</span>
+      <div class="field-copy empty" id="wrap-email">
+        <input class="field-value" id="email" readonly placeholder="—" />
+        <button class="btn-copy" onclick="copiar('email', this)">Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="status"></div>
+<button class="btn-clear" onclick="limpar()">Limpar tudo</button>
+
+<script>
+function setField(id, value) {
+  const input = document.getElementById(id);
+  const wrap  = document.getElementById('wrap-' + id);
+  if (value) {
+    input.value = value;
+    wrap.classList.remove('empty');
+    wrap.classList.add('filled');
+  } else {
+    input.value = '';
+    input.placeholder = '—';
+    wrap.classList.remove('filled');
+    wrap.classList.add('empty');
+  }
+}
+
+function extrair() {
+  const texto = document.getElementById('txt').value.trim();
+  if (!texto) {
+    setStatus('⚠ Cole um texto antes de extrair.', true);
+    return;
+  }
+
+  // CNPJ
+  const cnpjM = texto.match(/\bCNPJ[^0-9]*(\d{2}[.\s]?\d{3}[.\s]?\d{3}[\/\s]?\d{4}[-.]?\d{2})\b/i);
+  const cnpj  = cnpjM ? cnpjM[1].replace(/\s/g,'') : '';
+
+  // CPF
+  const cpfM = texto.match(/\bCPF[^0-9]*(\d{3}[.\s]?\d{3}[.\s]?\d{3}[-.]?\d{2})\b/i);
+  const cpf  = cpfM ? cpfM[1].replace(/\s/g,'') : '';
+
+  // Nome PJ — antes da palavra CNPJ
+  let nomePJ = '';
+  if (cnpj) {
+    const antes = texto.substring(0, texto.search(/\bCNPJ\b/i));
+    const m = antes.match(/(?:^|\n)\s*(?:(?:SR[AO]?|DR[AO]?|MR|MS|PROF)\.?\s+)?([A-ZÁÀÃÂÉÊÍÓÔÕÚÜÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÜÇa-záàãâéêíóôõúüç0-9\s]+?)(?:\s*,)/i);
+    if (m) nomePJ = m[1].trim();
+  }
+
+  // Nome PF — SR./SRA./DR. + nome + ', brasileiro' como confirmação
+  let nomePF = '';
+  const mPF = texto.match(/\b(?:SR[AO]?|DR[AO]?|MR|MS|PROF)\.?\s+([A-ZÁÀÃÂÉÊÍÓÔÕÚÜÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÜÇ\s]+?),\s*brasileiro/i);
+  if (mPF) {
+    nomePF = mPF[1].trim();
+  } else if (cpf && !cnpj) {
+    // Fallback quando só há CPF: primeiro nome até vírgula
+    const m = texto.match(/(?:^|\n)\s*(?:(?:SR[AO]?|DR[AO]?|MR|MS|PROF)\.?\s+)?([A-ZÁÀÃÂÉÊÍÓÔÕÚÜÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÜÇa-záàãâéêíóôõúüç\s]+?)(?:\s*,)/i);
+    if (m) nomePF = m[1].trim();
+  }
+
+  // E-mail
+  const emailM = texto.match(/\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b/i);
+  const email  = emailM ? emailM[0] : '';
+
+  // Telefone
+  const telM = texto.match(/(?:tel(?:efone)?\s*\.?\s*|fone\.?\s*|cel(?:ular)?\.?\s*)[+\s]?(\(?\d{2}\)?[\s.\-]?\d[\s.]?\d{4}[\s.\-]?\d{4})/i);
+  let tel = '';
+  if (telM) tel = telM[1].replace(/\s/g,'');
+  else {
+    const fb = texto.match(/\(?\b(\d{2})\)?[\s.\-]?(9\d[\s.]?\d{4}[\s.\-]?\d{4})\b/);
+    if (fb) tel = fb[1] + fb[2].replace(/\s/g,'');
+  }
+
+  setField('nome-pj', nomePJ);
+  setField('nome-pf', nomePF);
+  setField('cnpj',    cnpj);
+  setField('cpf',     cpf);
+  setField('tel',     tel);
+  setField('email',   email);
+
+  const total = [nomePJ, nomePF, cnpj, cpf, tel, email].filter(Boolean).length;
+  setStatus(total > 0 ? '✓ ' + total + ' dado(s) extraído(s)!' : '⚠ Nenhum dado reconhecido.', total === 0);
+}
+
+function copiar(id, btn) {
+  const val = document.getElementById(id).value;
+  if (!val) return;
+
+  // Tenta clipboard API moderno, fallback para execCommand
+  function confirmar() {
+    btn.textContent = '✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copiar';
+      btn.classList.remove('copied');
+    }, 1500);
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(confirmar).catch(() => fallback(val, confirmar));
+  } else {
+    fallback(val, confirmar);
+  }
+}
+
+function fallback(val, cb) {
+  const el = document.createElement('textarea');
+  el.value = val;
+  el.style.position = 'fixed';
+  el.style.opacity = '0';
+  document.body.appendChild(el);
+  el.focus();
+  el.select();
+  try { document.execCommand('copy'); cb(); } catch(e) {}
+  document.body.removeChild(el);
+}
+
+function limpar() {
+  document.getElementById('txt').value = '';
+  ['nome-pj','nome-pf','cnpj','cpf','tel','email'].forEach(id => setField(id, ''));
+  setStatus('');
+}
+
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = isError ? 'error' : '';
+}
+</script>
+</body>
+</html>
